@@ -16,8 +16,7 @@ import torchvision.transforms.functional
 
 from PIL import Image
 from torchvision import transforms
-from torchvideotransforms import video_transforms
-from vidaug import augmentors as va
+
 
 import torch
 import torch.nn as nn
@@ -137,6 +136,7 @@ def split_test_train(name, class_array, videos_array, num_label_array):
 
 split_test_train(name='train', class_array=train_class, videos_array=train_videos, num_label_array=train_num_label)
 split_test_train(name='test', class_array=test_class, videos_array=test_videos, num_label_array=test_num_label)
+
 
 """ --- val set --- """
 val_class = []
@@ -285,6 +285,12 @@ class VideoDataset(Dataset):
         #print('end_frame_clip_1', end_frame_clip_1_idx)
 
         tensor_clip_1 = video[start_frame_clip_1_idx: end_frame_clip_1_idx]
+
+        tensor_clip_1 = torch.reshape(tensor_clip_1,
+                                      [tensor_clip_1.size()[0],
+                                       tensor_clip_1.size()[3],
+                                       tensor_clip_1.size()[1],
+                                       tensor_clip_1.size()[2]])
         #print(len(clip_1))
         #print('clip_1 size: ',clip_1.size())
 
@@ -295,6 +301,11 @@ class VideoDataset(Dataset):
         end_frame_clip_2_idx = p + t + length_of_separated_clip_in_frames
 
         tensor_clip_2 = video[start_frame_clip_2_idx: end_frame_clip_2_idx]
+        tensor_clip_2 = torch.reshape(tensor_clip_2,
+                                      [tensor_clip_2.size()[0],
+                                       tensor_clip_2.size()[3],
+                                       tensor_clip_2.size()[1],
+                                       tensor_clip_2.size()[2]])
         #print(len(clip_2))
         #print(clip_1.size())
 
@@ -322,6 +333,18 @@ class VideoDataset(Dataset):
             # convert the PIL images to tensor then stack
             tensor_clip_2 = torch.stack([transforms.functional.to_tensor(pic) for pic in transformed_clip_2])
 
+            tensor_clip_1 = torch.reshape(tensor_clip_1,
+                                          [tensor_clip_1.size()[0],
+                                           tensor_clip_1.size()[3],
+                                           tensor_clip_1.size()[1],
+                                           tensor_clip_1.size()[2]])
+
+            tensor_clip_2 = torch.reshape(tensor_clip_2,
+                                          [tensor_clip_2.size()[0],
+                                           tensor_clip_2.size()[3],
+                                           tensor_clip_2.size()[1],
+                                           tensor_clip_2.size()[2]])
+
 
 
             # stack by columns and return a tensor
@@ -343,10 +366,10 @@ dataset = VideoDataset(class_labels=train_num_label, vid=train_videos)
 print(dataset.__len__())
 first_data = dataset[0]
 #print(first_data)
-sample, target = first_data
-print(sample.size())
+tensor_clip_1, tensor_clip_2, class_num_label = first_data
+print(tensor_clip_1.size())
 
-print(target)
+print(class_num_label)
 """
 
 """ --------- Create TrainTransform class ----------- """
@@ -621,20 +644,22 @@ class CVLR(object):
             epoch_losses_train = []
 
             for i_batch, sample_batched in enumerate(train_dataloader):
+                print(i_batch)
                 optimizer.zero_grad()
                 # print(sample_batched[1][0].size())
 
                 xis = sample_batched[0]
                 # the number of channels must be in the 2nd position else there will be an error
-                # xis.size()[0] -> 4 (batch size)
-                # xis.size()[2] -> 3 (colour channels)
+                #print(xis.size())
+                # xis.size()[0] -> 64 (batch size)
+                # xis.size()[3] -> 3 (colour channels)
                 # xis.size()[1] -> 16 (number of frames)
-                # xis.size()[3] -> 224 (height of frame)
+                # xis.size()[2] -> 224 (height of frame)
                 # xis.size()[4] -> 224 (width of frame)
-                xis = torch.reshape(xis, [xis.size()[0], xis.size()[2], xis.size()[1], xis.size()[3], xis.size()[4]])
+                xis = torch.reshape(xis, [xis.size()[0], xis.size()[3], xis.size()[1], xis.size()[2], xis.size()[4]])
 
                 xjs = sample_batched[1]
-                xjs = torch.reshape(xjs, [xjs.size()[0], xjs.size()[2], xjs.size()[1], xjs.size()[3], xjs.size()[4]])
+                xjs = torch.reshape(xjs, [xjs.size()[0], xjs.size()[3], xjs.size()[1], xjs.size()[2], xjs.size()[4]])
 
                 loss = self._step(model, xis, xjs, n_iter)
 
@@ -700,16 +725,15 @@ class CVLR(object):
 
             for i_batch, sample_batched in enumerate(val_dataloader):
                 xis = sample_batched[0]
-                # the number of channels must be in the 2nd position else there will be an error
-                # xis.size()[0] -> 4 (batch size)
-                # xis.size()[2] -> 3 (colour channels)
+                # xis.size()[0] -> 64 (batch size)
+                # xis.size()[3] -> 3 (colour channels)
                 # xis.size()[1] -> 16 (number of frames)
-                # xis.size()[3] -> 224 (height of frame)
+                # xis.size()[2] -> 224 (height of frame)
                 # xis.size()[4] -> 224 (width of frame)
-                xis = torch.reshape(xis, [xis.size()[0], xis.size()[2], xis.size()[1], xis.size()[3], xis.size()[4]])
+                xis = torch.reshape(xis, [xis.size()[0], xis.size()[3], xis.size()[1], xis.size()[2], xis.size()[4]])
 
                 xjs = sample_batched[1]
-                xjs = torch.reshape(xjs, [xjs.size()[0], xjs.size()[2], xjs.size()[1], xjs.size()[3], xjs.size()[4]])
+                xjs = torch.reshape(xjs, [xjs.size()[0], xjs.size()[3], xjs.size()[1], xjs.size()[2], xjs.size()[4]])
 
                 loss = self._step(model, xis, xjs, counter)
                 valid_loss += loss.item()
