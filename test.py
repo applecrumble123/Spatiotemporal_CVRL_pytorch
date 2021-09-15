@@ -359,7 +359,7 @@ class VideoDataset(Dataset):
         return len(self.vid)
 
 
-"""
+#"""
 # --- Testing the dataset class no transformations ---
 
 dataset = VideoDataset(class_labels=train_num_label, vid=train_videos)
@@ -370,7 +370,7 @@ tensor_clip_1, tensor_clip_2, class_num_label = first_data
 print(tensor_clip_1.size())
 
 print(class_num_label)
-"""
+#"""
 
 """ --------- Create TrainTransform class ----------- """
 class CVLRTrainTransform(object):
@@ -468,7 +468,7 @@ train_dataloader = DataLoader(train_transformed_dataset,
                               )
 
 """ ----- Test Dataloader ----- """
-test_transformed_dataset = VideoDataset(class_labels=test_num_label, vid=test_videos, transform=None)
+test_transformed_dataset = VideoDataset(class_labels=test_num_label, vid=test_videos, transform=CVLRTestTransform())
 
 test_dataloader = DataLoader(test_transformed_dataset,
                               batch_size=64,
@@ -479,7 +479,7 @@ test_dataloader = DataLoader(test_transformed_dataset,
 
 
 """ ----- val Dataloader ----- """
-val_transformed_dataset = VideoDataset(class_labels=val_num_label, vid=val_videos, transform=None)
+val_transformed_dataset = VideoDataset(class_labels=val_num_label, vid=val_videos, transform=CVLRTestTransform())
 
 val_dataloader = DataLoader(val_transformed_dataset,
                               batch_size=64,
@@ -644,19 +644,20 @@ class CVLR(object):
             epoch_losses_train = []
 
             for i_batch, sample_batched in enumerate(train_dataloader):
-                print(i_batch)
+                #print(i_batch)
                 optimizer.zero_grad()
                 # print(sample_batched[1][0].size())
 
                 xis = sample_batched[0]
                 # the number of channels must be in the 2nd position else there will be an error
-                #print(xis.size())
+                print(xis.size())
                 # xis.size()[0] -> 64 (batch size)
                 # xis.size()[3] -> 3 (colour channels)
                 # xis.size()[1] -> 16 (number of frames)
                 # xis.size()[2] -> 224 (height of frame)
                 # xis.size()[4] -> 224 (width of frame)
                 xis = torch.reshape(xis, [xis.size()[0], xis.size()[3], xis.size()[1], xis.size()[2], xis.size()[4]])
+                print(xis.size())
 
                 xjs = sample_batched[1]
                 xjs = torch.reshape(xjs, [xjs.size()[0], xjs.size()[3], xjs.size()[1], xjs.size()[2], xjs.size()[4]])
@@ -725,6 +726,7 @@ class CVLR(object):
 
             for i_batch, sample_batched in enumerate(val_dataloader):
                 xis = sample_batched[0]
+                #print(xis.size())
                 # xis.size()[0] -> 64 (batch size)
                 # xis.size()[3] -> 3 (colour channels)
                 # xis.size()[1] -> 16 (number of frames)
