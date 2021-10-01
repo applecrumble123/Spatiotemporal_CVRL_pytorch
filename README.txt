@@ -1,1 +1,6 @@
-wget https://www.crcv.ucf.edu/data/UCF101/UCF101.rar
+Test.py is done on the computer 
+
+test2.py is done on the server
+
+run_model.py is still in progress
+
