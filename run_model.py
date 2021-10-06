@@ -125,6 +125,7 @@ split_test_train(name='test', class_array=test_class, videos_array=test_videos, 
 
 
 """ Load the entire video instead of the 16 frames"""
+
 """ --------- Create Dataset class ----------- """
 
 class VideoDataset(Dataset):
@@ -190,6 +191,8 @@ class VideoDataset(Dataset):
         return len(self.vid)
 
 """
+# Test the dataset class
+
 dataset = VideoDataset(class_labels=train_num_label, vid=train_videos)
 print(dataset.__len__())
 first_data = dataset[3]
@@ -281,6 +284,8 @@ class ResNet_3D_50(ResNet):
         return h
 
 """
+# Check the output size of the model
+
 def test():
     model = ResNet_3D_50()
     x = torch.randn(10, 3, 3, 224, 224)
@@ -301,22 +306,12 @@ state_dict = torch.load(os.path.join(ROOT_FOLDER, 'saved_model/epoch_10_model.pt
 model.load_state_dict(state_dict)
 model = model.to(device)
 
-
-
 """
+# check each layer in the model
+
 print("Model's state_dict:")
 for param_tensor in model.state_dict():
     print(param_tensor, "\t", model.state_dict()[param_tensor].size())
-"""
-#print(list(model.modules()))
-
-
-#new_model = nn.Sequential(*list(model.modules())[:-2])
-#print(new_model)
-
-"""
-for layer in new_model:
-    print(layer)
 """
 
 # freeze all the layers in the resnet model
@@ -325,14 +320,44 @@ for param in model.parameters():
     #print(param)
 
 
-x_train = []
-y_train = []
 
 """
 len(sample_batched) = 2 (video frames, class labels)
 """
 
 train_features_path = os.path.join(ROOT_FOLDER, 'train_features')
+
+if not os.path.exists(train_features_path):
+    os.mkdir(train_features_path)
+
+
+x_train_pkl_path = os.path.join(train_features_path, 'x_train.pkl')
+y_train_pkl_path = os.path.join(train_features_path, 'y_train.pkl')
+
+if os.path.isfile(x_train_pkl_path) == False or os.path.isfile(y_train_pkl_path) == False:
+
+    x_train = []
+    y_train = []
+
+    for i_batch, sample_batched in enumerate(train_dataloader):
+        img = sample_batched[0].to(device)
+        # reshape to fit into the model
+        img = torch.reshape(img, [img.size()[0], img.size()[3], img.size()[1], img.size()[2], img.size()[4]]).to(device)
+        outputs = model(img).to(device)
+        x_train.append(outputs)
+        y_train.extend(sample_batched[1])
+
+    with open(x_train_pkl_path, 'wb') as f:
+        pickle.dump(x_train, f)
+
+    with open(y_train_pkl_path, 'wb') as f:
+        pickle.dump(y_train, f)
+
+else:
+    print("'x_train.pkl' and 'y_train.pkl' exists.")
+
+
+
 
 """
 for i_batch, sample_batched in enumerate(train_dataloader):
@@ -343,10 +368,6 @@ for i_batch, sample_batched in enumerate(train_dataloader):
     y_train.extend(sample_batched[1])
     #break
     #print(outputs.size())
-
-
-if not os.path.exists(train_features_path):
-    os.mkdir(train_features_path)
 
 with open(os.path.join(train_features_path, 'x_train.pkl'), 'wb') as f:
     pickle.dump(x_train, f)
@@ -361,9 +382,33 @@ print(y_train)
 
 test_features_path = os.path.join(ROOT_FOLDER, 'test_features')
 
+x_test_pkl_path = os.path.join(test_features_path, 'x_test.pkl')
+y_test_pkl_path = os.path.join(test_features_path, 'y_test.pkl')
+
+if os.path.isfile(x_test_pkl_path) == False or os.path.isfile(y_test_pkl_path) == False:
+
+    x_test = []
+    y_test = []
+
+    for i_batch, sample_batched in enumerate(test_dataloader):
+        img = sample_batched[0].to(device)
+        # reshape to fit into the model
+        img = torch.reshape(img, [img.size()[0], img.size()[3], img.size()[1], img.size()[2], img.size()[4]]).to(device)
+        outputs = model(img).to(device)
+        x_test.append(outputs)
+        y_test.extend(sample_batched[1])
+
+    with open(x_test_pkl_path, 'wb') as f:
+        pickle.dump(x_test, f)
+
+    with open(y_test_pkl_path, 'wb') as f:
+        pickle.dump(y_test, f)
+
+else:
+    print("'x_test.pkl' and 'y_test.pkl' exists.")
+
 """
-x_test = []
-y_test = []
+
 
 for i_batch, sample_batched in enumerate(test_dataloader):
     img = sample_batched[0].to(device)
@@ -401,24 +446,40 @@ with open(os.path.join(test_features_path, 'y_test.pkl'), 'rb') as f:
     y_test = pickle.load(f)
 
 
-x_train_numpy = []
+# need to convert tensors to numpy to load into regression model
+x_train_numpy_pkl_path = os.path.join(train_features_path, 'x_train_numpy.pkl')
 
-for i in x_train:
-    i = i.detach().cpu().numpy()
-    x_train_numpy.append(i)
+if os.path.isfile(x_train_numpy_pkl_path) == False:
+    x_train_numpy = []
+
+    for i in x_train:
+        i = i.detach().cpu().numpy()
+        x_train_numpy.append(i)
 
 
-with open(os.path.join(train_features_path, 'x_train_numpy.pkl'), 'wb') as f:
-    pickle.dump(x_train_numpy, f)
+    with open(x_train_numpy_pkl_path, 'wb') as f:
+        pickle.dump(x_train_numpy, f)
 
-x_test_numpy = []
+else:
+    print("'x_train_numpy.pkl' exists.")
 
-for i in x_test:
-    i = i.detach().cpu().numpy()
-    x_test_numpy.append(i)
 
-with open(os.path.join(test_features_path, 'x_test_numpy.pkl'), 'wb') as f:
-    pickle.dump(x_test_numpy, f)
+# need to convert tensors to numpy to load into regression model
+x_test_numpy_pkl_path = os.path.join(test_features_path, 'x_test_numpy.pkl')
+
+if os.path.isfile(x_test_numpy_pkl_path) == False:
+
+    x_test_numpy = []
+
+    for i in x_test:
+        i = i.detach().cpu().numpy()
+        x_test_numpy.append(i)
+
+    with open(x_test_numpy_pkl_path, 'wb') as f:
+        pickle.dump(x_test_numpy, f)
+
+else:
+    print("'x_test_numpy.pkl' exists.")
 
 
 with open(os.path.join(train_features_path, 'x_train_numpy.pkl'), 'rb') as f:
@@ -436,24 +497,7 @@ y_predict = logistic_regression.predict(x_test_numpy)
 acc = accuracy_score(y_test, y_predict)
 print("Accuracy is {}%".format(acc * 100))
 
-"""
-for i_batch, sample_batched in enumerate(train_dataloader):
-    #print(type(sample_batched))
-    print(len(sample_batched))
-    print(sample_batched[0].size())
-    print(sample_batched[1].size())
-    print(sample_batched[2])
 
-    #print(sample_batched[0].size())
-    img = sample_batched[0]
-
-    img = torch.reshape(img, [img.size()[0], img.size()[3], img.size()[1], img.size()[2], img.size()[4]])
-
-    print(type(img))
-    outputs = new_model(img).to(device)
-    print(len(outputs))
-    break
-"""
 
 
 
