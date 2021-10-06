@@ -1,27 +1,20 @@
 import numpy as np
-import pandas as pd
+
 import os
-import re
-from cv2 import cv2
-import shutil
-import random
 import torchvision.io
 from torch.utils.data import DataLoader, Dataset
-from typing import Optional, Callable, Tuple, Any
+
 from resnet_3D_50 import ResNet, block
-from torch.nn import functional as F
 import torchvision.transforms.functional
 import pickle
-
-
-from PIL import Image
 from torchvision import transforms
 
 
 import torch
 import torch.nn as nn
-from tqdm import tqdm
-from torch.utils.tensorboard import SummaryWriter
+
+import config
+
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -33,11 +26,6 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 print("There are {} GPUs available".format(torch.cuda.device_count()))
 
-""" ----------------- Folder path -------------------- """
-ROOT_FOLDER = '/data/johnathon/CVLR_venv'
-DATA_FOLDER = os.path.join(ROOT_FOLDER, 'data')
-DATA_LIST_FOLDER = os.path.join(ROOT_FOLDER, 'ucfTrainTestlist')
-CLASS_LIST_TEXT_FILE = os.path.join(DATA_LIST_FOLDER, 'classInd.txt')
 
 """ ------------------- Get train, test and val dataset ------------------ """
 # class number label, class name
@@ -49,7 +37,7 @@ class_name_labelling = []
 # class_num label
 class_num_labelling = []
 
-with open(CLASS_LIST_TEXT_FILE) as f:
+with open(config.CLASS_LIST_TEXT_FILE) as f:
     # read the lines
     lines = f.readlines()
     for line in lines:
@@ -76,12 +64,12 @@ test_num_label = []
 
 def split_test_train(name, class_array, videos_array, num_label_array):
     # run through the 'ucfTrainTestlist' folder to get the text file
-    for text_file in os.listdir(DATA_LIST_FOLDER):
+    for text_file in os.listdir(config.DATA_LIST_FOLDER):
         # if the 'train' word is in the file name
         if name in text_file:
             #print(text_file)
             # get the text_file path
-            file_path = os.path.join(DATA_LIST_FOLDER, text_file)
+            file_path = os.path.join(config.DATA_LIST_FOLDER, text_file)
             # open the text file
             with open(file_path) as f:
                 # read the lines
@@ -98,7 +86,7 @@ def split_test_train(name, class_array, videos_array, num_label_array):
                         # append to the class array
                         class_array.append(split_line[0])
                         # append to the video array
-                        videos_array.append(os.path.join(ROOT_FOLDER,'UCF101/videos',split_line[1]))
+                        videos_array.append(os.path.join(config.ROOT_FOLDER,'UCF101/videos',split_line[1]))
                         # append to the num_label array
                         num_label_array.append((split_line[2]))
                     # no number label in the test folder so need to append to it
@@ -114,7 +102,7 @@ def split_test_train(name, class_array, videos_array, num_label_array):
                                 # append to the class array
                                 class_array.append(split_line[0])
                                 # append to the video array
-                                videos_array.append(os.path.join(ROOT_FOLDER, 'UCF101/videos', split_line[1]))
+                                videos_array.append(os.path.join(config.ROOT_FOLDER, 'UCF101/videos', split_line[1]))
                                 # append to the num_label array
                                 num_label_array.append((split_line[2]))
 
@@ -301,7 +289,7 @@ def test():
 model = ResNet_3D_50()
 model = nn.DataParallel(model, device_ids=list(range(torch.cuda.device_count())))
 model.eval()
-state_dict = torch.load(os.path.join(ROOT_FOLDER, 'saved_model/epoch_10_model.pt'))
+state_dict = torch.load(config.SAVED_MODEL_CHECKPOINT_PATH)
 
 model.load_state_dict(state_dict)
 model = model.to(device)
@@ -325,7 +313,7 @@ for param in model.parameters():
 len(sample_batched) = 2 (video frames, class labels)
 """
 
-train_features_path = os.path.join(ROOT_FOLDER, 'train_features')
+train_features_path = os.path.join(config.ROOT_FOLDER, 'train_features')
 
 if not os.path.exists(train_features_path):
     os.mkdir(train_features_path)
@@ -333,6 +321,8 @@ if not os.path.exists(train_features_path):
 
 x_train_pkl_path = os.path.join(train_features_path, 'x_train.pkl')
 y_train_pkl_path = os.path.join(train_features_path, 'y_train.pkl')
+
+print(os.path.isfile(x_train_pkl_path))
 
 if os.path.isfile(x_train_pkl_path) == False or os.path.isfile(y_train_pkl_path) == False:
 
@@ -380,7 +370,7 @@ print(x_train)
 print(y_train)
 """
 
-test_features_path = os.path.join(ROOT_FOLDER, 'test_features')
+test_features_path = os.path.join(config.ROOT_FOLDER, 'test_features')
 
 x_test_pkl_path = os.path.join(test_features_path, 'x_test.pkl')
 y_test_pkl_path = os.path.join(test_features_path, 'y_test.pkl')

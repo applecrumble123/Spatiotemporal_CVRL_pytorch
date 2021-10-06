@@ -1,44 +1,36 @@
 import numpy as np
-import pandas as pd
 import os
-import re
-from cv2 import cv2
 import shutil
 import random
-import torchvision.io
-from torch.utils.data import DataLoader, Dataset
-from typing import Optional, Callable, Tuple, Any
-import torchvideo.transforms as VT
+from tqdm import tqdm
+
 from resnet_3D_50 import ResNet, block
-from torch.nn import functional as F
-import torchvision.transforms.functional
-
-
-from PIL import Image
-from torchvision import transforms
-
 
 import torch
 import torch.nn as nn
-import torch.distributed as dist
-from torch.utils.data.distributed import DistributedSampler
-from tqdm import tqdm
+import torchvision.io
+from torch.utils.data import DataLoader, Dataset
+from torch.nn import functional as F
+import torchvision.transforms.functional
+from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 
+import config
 
-device = torch.device("cuda:4" if torch.cuda.is_available() else "cpu")
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 print("There are {} GPUs available".format(torch.cuda.device_count()))
 
 """ ----------------- create folders -------------------- """
-ROOT_FOLDER = '/data/johnathon/CVLR_venv'
-DATA_FOLDER = os.path.join(ROOT_FOLDER, 'data')
-DATA_LIST_FOLDER = os.path.join(ROOT_FOLDER, 'ucfTrainTestlist')
-CLASS_LIST_TEXT_FILE = os.path.join(DATA_LIST_FOLDER, 'classInd.txt')
+#ROOT_FOLDER = '/data/johnathon/CVLR_venv'
+#DATA_FOLDER = os.path.join(ROOT_FOLDER, 'data')
+#DATA_LIST_FOLDER = os.path.join(ROOT_FOLDER, 'ucfTrainTestlist')
+#CLASS_LIST_TEXT_FILE = os.path.join(DATA_LIST_FOLDER, 'classInd.txt')
 
-TRAIN_FOLDER_PATH = os.path.join(DATA_FOLDER, 'train')
-TEST_FOLDER_PATH = os.path.join(DATA_FOLDER, 'test')
-VAL_FOLDER_PATH = os.path.join(DATA_FOLDER, 'val')
+#TRAIN_FOLDER_PATH = os.path.join(DATA_FOLDER, 'train')
+#TEST_FOLDER_PATH = os.path.join(DATA_FOLDER, 'test')
+#VAL_FOLDER_PATH = os.path.join(DATA_FOLDER, 'val')
 
 
 """ ------------------- Create root data folder, train, test and val sub folders ------------------ """
@@ -47,16 +39,16 @@ def create_folder(folder_path):
         os.mkdir(folder_path)
 
 # create data folder
-create_folder(DATA_FOLDER)
+create_folder(config.DATA_FOLDER)
 
 # create train folder
-create_folder(TRAIN_FOLDER_PATH)
+create_folder(config.TRAIN_FOLDER_PATH)
 
 # create test folder
-create_folder(TEST_FOLDER_PATH)
+create_folder(config.TEST_FOLDER_PATH)
 
 # create val folder
-create_folder(VAL_FOLDER_PATH)
+create_folder(config.VAL_FOLDER_PATH)
 
 
 """ ------------------- Get train, test and val dataset ------------------ """
@@ -69,7 +61,7 @@ class_name_labelling = []
 # class_num label
 class_num_labelling = []
 
-with open(CLASS_LIST_TEXT_FILE) as f:
+with open(config.CLASS_LIST_TEXT_FILE) as f:
     # read the lines
     lines = f.readlines()
     for line in lines:
@@ -97,12 +89,12 @@ test_num_label = []
 
 def split_test_train(name, class_array, videos_array, num_label_array):
     # run through the 'ucfTrainTestlist' folder to get the text file
-    for text_file in os.listdir(DATA_LIST_FOLDER):
+    for text_file in os.listdir(config.DATA_LIST_FOLDER):
         # if the 'train' word is in the file name
         if name in text_file:
             #print(text_file)
             # get the text_file path
-            file_path = os.path.join(DATA_LIST_FOLDER, text_file)
+            file_path = os.path.join(config.DATA_LIST_FOLDER, text_file)
             # open the text file
             with open(file_path) as f:
                 # read the lines
@@ -119,7 +111,7 @@ def split_test_train(name, class_array, videos_array, num_label_array):
                         # append to the class array
                         class_array.append(split_line[0])
                         # append to the video array
-                        videos_array.append(os.path.join(ROOT_FOLDER,'UCF101/videos',split_line[1]))
+                        videos_array.append(os.path.join(config.ROOT_FOLDER,'UCF101/videos',split_line[1]))
                         # append to the num_label array
                         num_label_array.append((split_line[2]))
                     # no number label in the test folder so need to append to it
@@ -135,7 +127,7 @@ def split_test_train(name, class_array, videos_array, num_label_array):
                                 # append to the class array
                                 class_array.append(split_line[0])
                                 # append to the video array
-                                videos_array.append(os.path.join(ROOT_FOLDER, 'UCF101/videos', split_line[1]))
+                                videos_array.append(os.path.join(config.ROOT_FOLDER, 'UCF101/videos', split_line[1]))
                                 # append to the num_label array
                                 num_label_array.append((split_line[2]))
 
@@ -208,31 +200,6 @@ for idx in appended_index:
     # remove from the train_videos array to avoid duplication
     train_videos.remove(train_videos[idx])
 
-def move_vid_to_new_folders(vid_path_array, folder_path):
-    for vid_path in vid_path_array:
-        #print(vid_path)
-        # split the vid path to get the vid name and class folder
-        vid_path_split = vid_path.split('/')
-        vid_name = vid_path_split[-1]
-        class_folder = vid_path_split[-2]
-
-        class_folder_path = os.path.join(folder_path, class_folder)
-        if not os.path.exists(class_folder_path):
-            os.mkdir(class_folder_path)
-
-        #print(class_folder)
-        #print(vid_name)
-        #print(vid_path_split)
-
-        # create a new vid path
-        new_vid_path = os.path.join(folder_path, class_folder, vid_name)
-        if not os.path.exists(new_vid_path):
-            shutil.copyfile(vid_path, new_vid_path)
-
-
-#move_vid_to_new_folders(vid_path_array = train_videos, folder_path = TRAIN_FOLDER_PATH)
-#move_vid_to_new_folders(vid_path_array = test_videos, folder_path = TEST_FOLDER_PATH)
-#move_vid_to_new_folders(vid_path_array = val_videos, folder_path = VAL_FOLDER_PATH)
 
 
 """ --------- Create Dataset class ----------- """
@@ -562,7 +529,7 @@ def ResNet_3D_50(img_channels = 3):
 #model = torch.hub.load('facebookresearch/pytorchvideo', 'slow_r50', pretrained=False)
 
 
-saved_model_folder = os.path.join(ROOT_FOLDER, 'saved_model')
+saved_model_folder = os.path.join(config.ROOT_FOLDER, 'saved_model')
 if not os.path.exists(saved_model_folder):
     os.mkdir(saved_model_folder)
 
@@ -576,7 +543,7 @@ class CVLR(object):
         # predefined above
         self.nt_xent_loss = nt_xent_loss
         self.encoder = ResNet_3D_50()
-        self.writer = SummaryWriter(log_dir=os.path.join(ROOT_FOLDER,'tensorboard_logs'))
+        self.writer = SummaryWriter(log_dir=os.path.join(config.ROOT_FOLDER,'tensorboard_logs'))
 
     # use GPU if available
     def _get_device(self):
@@ -631,13 +598,9 @@ class CVLR(object):
 
         #model = ResNet_3D_50().to(self.device)
         model = ResNet_3D_50()
-        #model = self._load_pre_trained_weights(model)
+        model = self._load_pre_trained_weights(model)
 
-        #dist.init_process_group(backend='nccl', world_size=4)
-
-        #model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[4])
         model = nn.DataParallel(model, device_ids=list(range(torch.cuda.device_count())))
-        #model = nn.DataParallel(model, device_ids=[1,3])
 
         model.to(self.device)
 
@@ -645,12 +608,6 @@ class CVLR(object):
 
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_videos), eta_min=0,
                                                                last_epoch=-1)
-
-        # path where the model is saved
-        #model_checkpoints_folder = config.MODEL_CHECKPOINT_FOLDER
-
-        ## create the folder to save the model
-        #create_saved_model_folder(model_checkpoints_folder)
 
         n_iter = 0
         valid_n_iter = 0
@@ -807,18 +764,18 @@ class CVLR(object):
         return valid_loss
 
     
-    """
+
     def _load_pre_trained_weights(self, model):
         try:
-            checkpoints_folder = config.MODEL_CHECKPOINT_FOLDER
-            state_dict = torch.load(config.SAVED_MODEL_PATH)
+            # load the checkpoint after the model runs
+            state_dict = torch.load(config.SAVED_MODEL_CHECKPOINT_PATH)
             model.load_state_dict(state_dict)
             print("Loaded pre-trained model with success.")
         except FileNotFoundError:
             print("Pre-trained weights not found. Training from scratch.")
 
         return model
-    """
+
 
 
 if __name__ == '__main__':
