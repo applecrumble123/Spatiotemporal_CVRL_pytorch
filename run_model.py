@@ -322,7 +322,6 @@ if not os.path.exists(train_features_path):
 x_train_pkl_path = os.path.join(train_features_path, 'x_train.pkl')
 y_train_pkl_path = os.path.join(train_features_path, 'y_train.pkl')
 
-print(os.path.isfile(x_train_pkl_path))
 
 if os.path.isfile(x_train_pkl_path) == False or os.path.isfile(y_train_pkl_path) == False:
 
@@ -347,28 +346,6 @@ else:
     print("'x_train.pkl' and 'y_train.pkl' exists.")
 
 
-
-
-"""
-for i_batch, sample_batched in enumerate(train_dataloader):
-    img = sample_batched[0].to(device)
-    img = torch.reshape(img, [img.size()[0], img.size()[3], img.size()[1], img.size()[2], img.size()[4]]).to(device)
-    outputs = model(img).to(device)
-    x_train.append(outputs)
-    y_train.extend(sample_batched[1])
-    #break
-    #print(outputs.size())
-
-with open(os.path.join(train_features_path, 'x_train.pkl'), 'wb') as f:
-    pickle.dump(x_train, f)
-
-
-with open(os.path.join(train_features_path, 'y_train.pkl'), 'wb') as f:
-    pickle.dump(y_train, f)
-
-print(x_train)
-print(y_train)
-"""
 
 test_features_path = os.path.join(config.ROOT_FOLDER, 'test_features')
 
@@ -397,31 +374,7 @@ if os.path.isfile(x_test_pkl_path) == False or os.path.isfile(y_test_pkl_path) =
 else:
     print("'x_test.pkl' and 'y_test.pkl' exists.")
 
-"""
 
-
-for i_batch, sample_batched in enumerate(test_dataloader):
-    img = sample_batched[0].to(device)
-    img = torch.reshape(img, [img.size()[0], img.size()[3], img.size()[1], img.size()[2], img.size()[4]]).to(device)
-    outputs = model(img).to(device)
-    x_test.append(outputs)
-    y_test.extend(sample_batched[1])
-    #break
-    #print(outputs.size())
-
-if not os.path.exists(test_features_path):
-    os.mkdir(test_features_path)
-
-with open(os.path.join(test_features_path, 'x_test.pkl'), 'wb') as f:
-    pickle.dump(x_test, f)
-
-
-with open(os.path.join(test_features_path, 'y_test.pkl'), 'wb') as f:
-    pickle.dump(y_test, f)
-
-print(x_test)
-print(y_test)
-"""
 
 with open(os.path.join(train_features_path, 'x_train.pkl'), 'rb') as f:
     x_train = pickle.load(f)
