@@ -322,7 +322,7 @@ if not os.path.exists(train_features_path):
 x_train_pkl_path = os.path.join(train_features_path, 'x_train.pkl')
 y_train_pkl_path = os.path.join(train_features_path, 'y_train.pkl')
 
-
+# run only if the pickle file does not exist
 if os.path.isfile(x_train_pkl_path) == False or os.path.isfile(y_train_pkl_path) == False:
 
     x_train = []
@@ -336,9 +336,10 @@ if os.path.isfile(x_train_pkl_path) == False or os.path.isfile(y_train_pkl_path)
         x_train.append(outputs)
         y_train.extend(sample_batched[1])
 
+    # save x train features in a pickle file
     with open(x_train_pkl_path, 'wb') as f:
         pickle.dump(x_train, f)
-
+    # save y train labels in a pickle file
     with open(y_train_pkl_path, 'wb') as f:
         pickle.dump(y_train, f)
 
@@ -352,6 +353,7 @@ test_features_path = os.path.join(config.ROOT_FOLDER, 'test_features')
 x_test_pkl_path = os.path.join(test_features_path, 'x_test.pkl')
 y_test_pkl_path = os.path.join(test_features_path, 'y_test.pkl')
 
+# run only if the pickle file does not exist
 if os.path.isfile(x_test_pkl_path) == False or os.path.isfile(y_test_pkl_path) == False:
 
     x_test = []
@@ -365,9 +367,10 @@ if os.path.isfile(x_test_pkl_path) == False or os.path.isfile(y_test_pkl_path) =
         x_test.append(outputs)
         y_test.extend(sample_batched[1])
 
+    # save x test features in a pickle file
     with open(x_test_pkl_path, 'wb') as f:
         pickle.dump(x_test, f)
-
+    # save y test labels in a pickle file
     with open(y_test_pkl_path, 'wb') as f:
         pickle.dump(y_test, f)
 
