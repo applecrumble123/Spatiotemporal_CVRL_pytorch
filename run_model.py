@@ -26,12 +26,15 @@ from torch.utils.tensorboard import SummaryWriter
 import warnings
 warnings.filterwarnings('ignore')
 
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 print("There are {} GPUs available".format(torch.cuda.device_count()))
 
 """ ----------------- Folder path -------------------- """
-ROOT_FOLDER = '/Users/johnathontoh/Desktop/CVLR'
+ROOT_FOLDER = '/data/johnathon/CVLR_venv'
 DATA_FOLDER = os.path.join(ROOT_FOLDER, 'data')
 DATA_LIST_FOLDER = os.path.join(ROOT_FOLDER, 'ucfTrainTestlist')
 CLASS_LIST_TEXT_FILE = os.path.join(DATA_LIST_FOLDER, 'classInd.txt')
@@ -95,7 +98,7 @@ def split_test_train(name, class_array, videos_array, num_label_array):
                         # append to the class array
                         class_array.append(split_line[0])
                         # append to the video array
-                        videos_array.append(os.path.join(ROOT_FOLDER,'UCF-101',split_line[0],split_line[1]))
+                        videos_array.append(os.path.join(ROOT_FOLDER,'UCF101/videos',split_line[1]))
                         # append to the num_label array
                         num_label_array.append((split_line[2]))
                     # no number label in the test folder so need to append to it
@@ -111,7 +114,7 @@ def split_test_train(name, class_array, videos_array, num_label_array):
                                 # append to the class array
                                 class_array.append(split_line[0])
                                 # append to the video array
-                                videos_array.append(os.path.join(ROOT_FOLDER, 'UCF-101', split_line[0], split_line[1]))
+                                videos_array.append(os.path.join(ROOT_FOLDER, 'UCF101/videos', split_line[1]))
                                 # append to the num_label array
                                 num_label_array.append((split_line[2]))
 
@@ -287,14 +290,19 @@ def test():
 
 #test()
 """
+
+
 #model = ResNet_3D_50()
 model = ResNet_3D_50()
 model = nn.DataParallel(model, device_ids=list(range(torch.cuda.device_count())))
 model.eval()
-state_dict = torch.load('/Users/johnathontoh/Desktop/CVLR/saved_model/epoch_10_model.pt', map_location=torch.device('cpu'))
+state_dict = torch.load(os.path.join(ROOT_FOLDER, 'saved_model/epoch_10_model.pt'))
 
 model.load_state_dict(state_dict)
 model = model.to(device)
+
+
+
 """
 print("Model's state_dict:")
 for param_tensor in model.state_dict():
@@ -324,26 +332,109 @@ y_train = []
 len(sample_batched) = 2 (video frames, class labels)
 """
 
+train_features_path = os.path.join(ROOT_FOLDER, 'train_features')
+
+"""
 for i_batch, sample_batched in enumerate(train_dataloader):
-    img = sample_batched[0]
-    img = torch.reshape(img, [img.size()[0], img.size()[3], img.size()[1], img.size()[2], img.size()[4]])
+    img = sample_batched[0].to(device)
+    img = torch.reshape(img, [img.size()[0], img.size()[3], img.size()[1], img.size()[2], img.size()[4]]).to(device)
     outputs = model(img).to(device)
-    x_train.extend(outputs)
+    x_train.append(outputs)
     y_train.extend(sample_batched[1])
     #break
     #print(outputs.size())
 
-train_features_path = os.path.join(ROOT_FOLDER, 'train_features')
 
-with open('x_train.pkl', 'wb') as f:
+if not os.path.exists(train_features_path):
+    os.mkdir(train_features_path)
+
+with open(os.path.join(train_features_path, 'x_train.pkl'), 'wb') as f:
     pickle.dump(x_train, f)
 
-with open('y_train.pkl', 'wb') as f:
+
+with open(os.path.join(train_features_path, 'y_train.pkl'), 'wb') as f:
     pickle.dump(y_train, f)
 
 print(x_train)
 print(y_train)
+"""
 
+test_features_path = os.path.join(ROOT_FOLDER, 'test_features')
+
+"""
+x_test = []
+y_test = []
+
+for i_batch, sample_batched in enumerate(test_dataloader):
+    img = sample_batched[0].to(device)
+    img = torch.reshape(img, [img.size()[0], img.size()[3], img.size()[1], img.size()[2], img.size()[4]]).to(device)
+    outputs = model(img).to(device)
+    x_test.append(outputs)
+    y_test.extend(sample_batched[1])
+    #break
+    #print(outputs.size())
+
+if not os.path.exists(test_features_path):
+    os.mkdir(test_features_path)
+
+with open(os.path.join(test_features_path, 'x_test.pkl'), 'wb') as f:
+    pickle.dump(x_test, f)
+
+
+with open(os.path.join(test_features_path, 'y_test.pkl'), 'wb') as f:
+    pickle.dump(y_test, f)
+
+print(x_test)
+print(y_test)
+"""
+
+with open(os.path.join(train_features_path, 'x_train.pkl'), 'rb') as f:
+    x_train = pickle.load(f)
+
+with open(os.path.join(train_features_path, 'y_train.pkl'), 'rb') as f:
+    y_train = pickle.load(f)
+
+with open(os.path.join(test_features_path, 'x_test.pkl'), 'rb') as f:
+    x_test = pickle.load(f)
+
+with open(os.path.join(test_features_path, 'y_test.pkl'), 'rb') as f:
+    y_test = pickle.load(f)
+
+
+x_train_numpy = []
+
+for i in x_train:
+    i = i.detach().cpu().numpy()
+    x_train_numpy.append(i)
+
+
+with open(os.path.join(train_features_path, 'x_train_numpy.pkl'), 'wb') as f:
+    pickle.dump(x_train_numpy, f)
+
+x_test_numpy = []
+
+for i in x_test:
+    i = i.detach().cpu().numpy()
+    x_test_numpy.append(i)
+
+with open(os.path.join(test_features_path, 'x_test_numpy.pkl'), 'wb') as f:
+    pickle.dump(x_test_numpy, f)
+
+
+with open(os.path.join(train_features_path, 'x_train_numpy.pkl'), 'rb') as f:
+    x_train_numpy = pickle.load(f)
+
+with open(os.path.join(test_features_path, 'x_test_numpy.pkl'), 'rb') as f:
+    x_test_numpy = pickle.load(f)
+
+
+logistic_regression = LogisticRegression(random_state=0, max_iter=5000, solver='lbfgs', C=1.0)
+logistic_regression.fit(x_train_numpy, y_train)
+
+y_predict = logistic_regression.predict(x_test_numpy)
+
+acc = accuracy_score(y_test, y_predict)
+print("Accuracy is {}%".format(acc * 100))
 
 """
 for i_batch, sample_batched in enumerate(train_dataloader):
