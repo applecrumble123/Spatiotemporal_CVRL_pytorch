@@ -14,5 +14,13 @@ TEST_FOLDER_PATH = os.path.join(DATA_FOLDER, 'test')
 
 VAL_FOLDER_PATH = os.path.join(DATA_FOLDER, 'val')
 
+BATCH_SIZE = 32
+
+LENGTH_OF_CLIP = 16
+
+RESIZED_FRAME = 224
+
+DATALOADER_NUM_WORKERS = 3
+
 # in run_model.py
 SAVED_MODEL_CHECKPOINT_PATH = os.path.join(ROOT_FOLDER, 'saved_model/epoch_10_model.pt')

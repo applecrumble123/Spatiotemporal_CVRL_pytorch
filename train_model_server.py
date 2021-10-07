@@ -1,24 +1,36 @@
 import numpy as np
 import os
-
 import shutil
 import random
-import torchvision.io
-from torch.utils.data import DataLoader, Dataset
+from tqdm import tqdm
 
 from resnet_3D_50 import ResNet, block
-from torch.nn import functional as F
 
-import torchvision.transforms.functional
+import torch
 import torch.nn as nn
+import torchvision.io
+from torch.utils.data import DataLoader, Dataset
+from torch.nn import functional as F
+import torchvision.transforms.functional
 from torchvision import transforms
+from torch.utils.tensorboard import SummaryWriter
 
 import config
-import torch
 
 
-device = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+print("There are {} GPUs available".format(torch.cuda.device_count()))
+
+""" ----------------- create folders -------------------- """
+#ROOT_FOLDER = '/data/johnathon/CVLR_venv'
+#DATA_FOLDER = os.path.join(ROOT_FOLDER, 'data')
+#DATA_LIST_FOLDER = os.path.join(ROOT_FOLDER, 'ucfTrainTestlist')
+#CLASS_LIST_TEXT_FILE = os.path.join(DATA_LIST_FOLDER, 'classInd.txt')
+
+#TRAIN_FOLDER_PATH = os.path.join(DATA_FOLDER, 'train')
+#TEST_FOLDER_PATH = os.path.join(DATA_FOLDER, 'test')
+#VAL_FOLDER_PATH = os.path.join(DATA_FOLDER, 'val')
 
 
 """ ------------------- Create root data folder, train, test and val sub folders ------------------ """
@@ -99,7 +111,7 @@ def split_test_train(name, class_array, videos_array, num_label_array):
                         # append to the class array
                         class_array.append(split_line[0])
                         # append to the video array
-                        videos_array.append(os.path.join(config.ROOT_FOLDER,'UCF-101',split_line[0],split_line[1]))
+                        videos_array.append(os.path.join(config.ROOT_FOLDER,'UCF101/videos',split_line[1]))
                         # append to the num_label array
                         num_label_array.append((split_line[2]))
                     # no number label in the test folder so need to append to it
@@ -115,7 +127,7 @@ def split_test_train(name, class_array, videos_array, num_label_array):
                                 # append to the class array
                                 class_array.append(split_line[0])
                                 # append to the video array
-                                videos_array.append(os.path.join(config.ROOT_FOLDER, 'UCF-101', split_line[0], split_line[1]))
+                                videos_array.append(os.path.join(config.ROOT_FOLDER, 'UCF101/videos', split_line[1]))
                                 # append to the num_label array
                                 num_label_array.append((split_line[2]))
 
@@ -189,6 +201,7 @@ for idx in appended_index:
     train_videos.remove(train_videos[idx])
 
 
+
 """ --------- Create Dataset class ----------- """
 
 class VideoDataset(Dataset):
@@ -216,7 +229,7 @@ class VideoDataset(Dataset):
 
         # number of frames to be saved into the frame folder for each clip
         # 16 frames to be put into the model
-        length_of_separated_clip_in_frames = 16
+        length_of_separated_clip_in_frames = config.LENGTH_OF_CLIP
 
         # formula to get the sample distribution of P, which is the end point for clip 1 and, P + t for starting point of clip 2
         # P = L-(2*W+t)
@@ -232,7 +245,7 @@ class VideoDataset(Dataset):
         # if p is a value that will result in a negative frame, start from frame 0
         if p - length_of_separated_clip_in_frames <= -1:
             start_frame_clip_1_idx = start_frame_clip_1_idx + 0
-            end_frame_clip_1_idx = end_frame_clip_1_idx + 16
+            end_frame_clip_1_idx = end_frame_clip_1_idx + config.LENGTH_OF_CLIP
 
         else:
             # p - 16 to get 16 frames as stated in the paper
@@ -339,7 +352,7 @@ class CVLRTrainTransform(object):
     def __init__(self):
 
         data_transforms = [
-            transforms.RandomResizedCrop(size=224, scale=(0.3, 1), ratio=(0.5, 2)),
+            transforms.RandomResizedCrop(size=config.RESIZED_FRAME, scale=(0.3, 1), ratio=(0.5, 2)),
             transforms.RandomHorizontalFlip(p=0.5),
             transforms.RandomVerticalFlip(p=0.5),
             transforms.RandomApply(torch.nn.ModuleList([transforms.ColorJitter(brightness=0.8 * 0.3,
@@ -379,7 +392,7 @@ class CVLRTestTransform(object):
     def __init__(self):
 
         data_transforms = [
-            transforms.RandomResizedCrop(size=224, scale=(0.3, 1), ratio=(0.5, 2)),
+            transforms.RandomResizedCrop(size=config.RESIZED_FRAME, scale=(0.3, 1), ratio=(0.5, 2)),
             #transforms.ToTensor()
 
         ]
@@ -422,20 +435,20 @@ clip_1, clip_2, target = first_data
 train_transformed_dataset = VideoDataset(class_labels=train_num_label, vid=train_videos, transform=CVLRTrainTransform())
 
 train_dataloader = DataLoader(train_transformed_dataset,
-                              batch_size=64,
+                              batch_size=config.BATCH_SIZE,
                               shuffle=True,
                               # uncomment when using server
-                              # num_workers=2
+                              num_workers=config.DATALOADER_NUM_WORKERS
                               )
 
 """ ----- Test Dataloader ----- """
 test_transformed_dataset = VideoDataset(class_labels=test_num_label, vid=test_videos, transform=CVLRTestTransform())
 
 test_dataloader = DataLoader(test_transformed_dataset,
-                              batch_size=64,
+                              batch_size=config.BATCH_SIZE,
                               shuffle=True,
                               # uncomment when using server
-                              # num_workers=2
+                              num_workers=config.DATALOADER_NUM_WORKERS
                               )
 
 
@@ -443,10 +456,10 @@ test_dataloader = DataLoader(test_transformed_dataset,
 val_transformed_dataset = VideoDataset(class_labels=val_num_label, vid=val_videos, transform=CVLRTestTransform())
 
 val_dataloader = DataLoader(val_transformed_dataset,
-                              batch_size=64,
+                              batch_size=config.BATCH_SIZE,
                               shuffle=True,
                               # uncomment when using server
-                              # num_workers=2
+                              num_workers=config.DATALOADER_NUM_WORKERS
                               )
 
 
@@ -457,9 +470,6 @@ for idx_batch, sample in enumerate(train_dataloader):
     #print(idx_batch, sample)
     print(sample[0].size())
 """
-
-
-
 
 """ --------- Loss function ----------- """
 # normalized temperature-scaled cross entropy loss
@@ -486,6 +496,7 @@ def nt_xent_loss(output1, output2, temperature):
     # Returns a new 1-D tensor which indexes the input tensor (sim) according to the boolean mask (mask) which is a BoolTensor.
     # returns a tensor with 1 row and n columns and sum it with the last dimension
     neg = sim.masked_select(mask).view(n_samples,-1).sum(dim=-1)
+    
 
     # Positive similarity
     # exp --> exponential of the sum of the last dimension after output1 * output2 divided by the temp
@@ -496,6 +507,7 @@ def nt_xent_loss(output1, output2, temperature):
     # 2 copies of the numerator as the loss is symmetric but the denominator is 2 different values --> 1 for x, 1 for y
     # the loss will be a scalar value
     loss = -torch.log(pos/neg).mean()
+    #print(loss)
     return loss
 
 # make a directory to save the model
@@ -512,6 +524,10 @@ def ResNet_3D_50(img_channels = 3):
 #model = torch.hub.load('facebookresearch/pytorchvideo', 'slow_r50', pretrained=False)
 
 
+saved_model_folder = os.path.join(config.ROOT_FOLDER, 'saved_model')
+if not os.path.exists(saved_model_folder):
+    os.mkdir(saved_model_folder)
+
 
 class CVLR(object):
 
@@ -522,26 +538,51 @@ class CVLR(object):
         # predefined above
         self.nt_xent_loss = nt_xent_loss
         self.encoder = ResNet_3D_50()
+        self.writer = SummaryWriter(log_dir=os.path.join(config.ROOT_FOLDER,'tensorboard_logs'))
 
     # use GPU if available
     def _get_device(self):
-        device = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
         return device
 
     def _step(self, model, xis, xjs, n_iter):
         # get the representations and the projections
         ris, zis = model(xis)  # [N,C]
+        #print('zis: ', zis)
+        #print('zis size: ', zis.size())
 
         # get the representations and the projections
         rjs, zjs = model(xjs)  # [N,C]
+        #print('zjs: ', zjs)
+        #print('zjs size: ',zjs.size())
+        #print(len(zis))
+        # there is only one batch of 128 features
+        if len(zis) == 128 and len(zjs) == 128:
+           
+            zis = F.normalize(zis, dim=0)
+            zjs = F.normalize(zjs, dim=0)
 
-        # normalize projection feature vectors
-        zis = F.normalize(zis, dim=1)
-        zjs = F.normalize(zjs, dim=1)
+            zis = torch.reshape(zis, (1, 128))
+            zjs = torch.reshape(zjs, (1, 128))
 
-        loss = nt_xent_loss(zis, zjs, temperature=0.5)
 
-        return loss
+            loss = nt_xent_loss(zis, zjs, temperature=0.5)
+
+
+            return loss
+        
+        else:
+            # normalize projection feature vectors
+            zis = F.normalize(zis, dim=1)
+            #print('normalise zis: ', zis)
+
+            zjs = F.normalize(zjs, dim=1)
+            #print('normalise zjs: ', zjs)
+
+            loss = nt_xent_loss(zis, zjs, temperature=0.5)
+
+            return loss
 
     def train(self):
 
@@ -550,10 +591,15 @@ class CVLR(object):
 
             return sum(L) / len(L)
 
-        model = ResNet_3D_50().to(self.device)
+        #model = ResNet_3D_50().to(self.device)
+        model = ResNet_3D_50()
         model = self._load_pre_trained_weights(model)
 
-        optimizer = torch.optim.SGD(model.parameters(), lr=1.0, weight_decay=1e-6)
+        model = nn.DataParallel(model, device_ids=list(range(torch.cuda.device_count())))
+
+        model.to(self.device)
+
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01, weight_decay=1e-6)
 
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_videos), eta_min=0,
                                                                last_epoch=-1)
@@ -591,48 +637,56 @@ class CVLR(object):
         sample_batched[1][0]
         """
 
-        for epoch_counter in range(5):
+        for epoch_counter in tqdm(range(30), desc='Epoch progress'):
 
             # a list to store losses for each epoch
             epoch_losses_train = []
 
-            for i_batch, sample_batched in enumerate(train_dataloader):
-                #print(i_batch)
+            for i_batch, sample_batched in enumerate(tqdm(train_dataloader, desc='Dataloader progress')):
                 optimizer.zero_grad()
                 # print(sample_batched[1][0].size())
+                #print(i_batch)
 
                 xis = sample_batched[0]
                 # the number of channels must be in the 2nd position else there will be an error
-                print(xis.size())
+                #print(xis.size())
                 # xis.size()[0] -> 64 (batch size)
                 # xis.size()[3] -> 3 (colour channels)
                 # xis.size()[1] -> 16 (number of frames)
                 # xis.size()[2] -> 224 (height of frame)
                 # xis.size()[4] -> 224 (width of frame)
-                xis = torch.reshape(xis, [xis.size()[0], xis.size()[3], xis.size()[1], xis.size()[2], xis.size()[4]])
-                print(xis.size())
+                xis = torch.reshape(xis, [xis.size()[0], xis.size()[3], xis.size()[1], xis.size()[2], xis.size()[4]]).to(self.device)
+                #print('xi: ', xis.size())
 
                 xjs = sample_batched[1]
-                xjs = torch.reshape(xjs, [xjs.size()[0], xjs.size()[3], xjs.size()[1], xjs.size()[2], xjs.size()[4]])
+                xjs = torch.reshape(xjs, [xjs.size()[0], xjs.size()[3], xjs.size()[1], xjs.size()[2], xjs.size()[4]]).to(self.device)
+                #print('xjs: ', xjs.size())
 
                 loss = self._step(model, xis, xjs, n_iter)
+                #print(loss)
 
                 # put that loss value in the epoch losses list
                 epoch_losses_train.append(loss.to(self.device).data.item())
 
+                
                 # back propagation
                 loss.backward()
+                #print(loss)
 
                 optimizer.step()
                 n_iter += 1
             # print("Epoch:{}".format(epoch_counter))
 
-            valid_loss = self._validate(model, val_dataloader)
+            self.writer.add_scalar('train_loss', epoch_losses_train[epoch_counter], epoch_counter)
+
+            valid_loss = self._validate(model, test_dataloader)
 
             #mean of epoch losses, essentially this will reflect mean batch loss for each epoch
             mean_batch_loss_training = get_mean_of_list(epoch_losses_train)
 
             print("Epoch:{} ------ Mean Batch Loss ({}) ------ Validation_loss: ({})".format(epoch_counter, mean_batch_loss_training, valid_loss))
+            model_path = os.path.join(saved_model_folder, 'epoch_{}_model.pt'.format(epoch_counter))
+            torch.save(model.state_dict(), model_path)
 
 
             """
@@ -668,8 +722,14 @@ class CVLR(object):
             if epoch_counter >= 10:
                 scheduler.step()
 
+            if epoch_counter == 30:
+                self.writer.flush()
+                self.writer.close()
+
+        
+
     # validation step
-    def _validate(self, model, val_dataloader):
+    def _validate(self, model, dataloader):
         # validation steps
         with torch.no_grad():
             model.eval()
@@ -677,18 +737,19 @@ class CVLR(object):
             valid_loss = 0.0
             counter = 0
 
-            for i_batch, sample_batched in enumerate(val_dataloader):
+            for i_batch, sample_batched in enumerate(dataloader):
                 xis = sample_batched[0]
-                #print(xis.size())
                 # xis.size()[0] -> 64 (batch size)
                 # xis.size()[3] -> 3 (colour channels)
                 # xis.size()[1] -> 16 (number of frames)
                 # xis.size()[2] -> 224 (height of frame)
                 # xis.size()[4] -> 224 (width of frame)
-                xis = torch.reshape(xis, [xis.size()[0], xis.size()[3], xis.size()[1], xis.size()[2], xis.size()[4]])
+                xis = torch.reshape(xis, [xis.size()[0], xis.size()[3], xis.size()[1], xis.size()[2], xis.size()[4]]).to(self.device)
+                #print('xis: ', xis.size())
 
                 xjs = sample_batched[1]
-                xjs = torch.reshape(xjs, [xjs.size()[0], xjs.size()[3], xjs.size()[1], xjs.size()[2], xjs.size()[4]])
+                xjs = torch.reshape(xjs, [xjs.size()[0], xjs.size()[3], xjs.size()[1], xjs.size()[2], xjs.size()[4]]).to(self.device)
+                #print('xjs: ', xjs.size())
 
                 loss = self._step(model, xis, xjs, counter)
                 valid_loss += loss.item()
@@ -697,9 +758,11 @@ class CVLR(object):
         model.train()
         return valid_loss
 
+    
 
     def _load_pre_trained_weights(self, model):
         try:
+            # load the checkpoint after the model runs
             state_dict = torch.load(config.SAVED_MODEL_CHECKPOINT_PATH)
             model.load_state_dict(state_dict)
             print("Loaded pre-trained model with success.")
