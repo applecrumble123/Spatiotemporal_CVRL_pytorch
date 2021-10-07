@@ -2,7 +2,8 @@
 
 ### Ensure the splitting of the test and train videos is correct before runnning the python file
 
-## 
+#### For local.py
+
 
 local.py is done on the computer 
 
