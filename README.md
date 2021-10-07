@@ -3,7 +3,7 @@ This uses a self-supervised Contrastive Video Representation Learning (CVRL) met
 
 Paper: https://arxiv.org/pdf/2008.03800.pdf
 
-### Ensure the splitting of the test and train videos is correct before runnning the python file
+## Ensure the splitting of the test and train videos is correct before runnning the python file
 
 #### For "local.py"
 There is a main folder, sub folders (class label) and videos in the sub-folders.
@@ -29,9 +29,13 @@ Modify the config file to change the folders path, saved model checkpoint and ba
 For the validation dataloader in line 689 in server.py and line 630 in local.py:
 - Use maximum of 2 GPU when using test_dataloader for validation and 4 GPUs when using val_dataloader
 
-local.py is done on the computer 
+## Useful commands to fun the python file
 
-server.py is done on the server
+- watch the running of gpu when using a server --> watch -d -n -0.5 nvidia-smi 
+- making only 2 GPUs visible when using test_dataloader as validation dataloader --> export CUDA_VISIBLE_DEVICES=0,1 (change the indexes of GPUs accordingly)
+- nohup python3 train_model_server.py > output.txt --> run the training of model python file in the background and write the output to the output.txt
+- nohup python3 run_model.py > acc.txt --> run the frozen model python file in the background to get the accuracy and write the output to the acc.txt
+- watch the output file live while the background process is running --> watch -n 1 tail -n 10 acc.txt (change the name of the text file accordingly)
 
-run_model.py is still in progress
+*** Run the nohup command first. First run the server.py then once completed, run the run_model.py
 
