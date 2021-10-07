@@ -10,54 +10,12 @@ There is a main folder, sub folders (class label) and videos in the sub-folders.
 
 Video File structure for the UCF101:
 
-(Main Folder)
-UCF-101
-  |   
-  |   (sub-folder -- class label)
-  |_ _ _ ApplyEyeMakeup
-  |            |
-  |            |                (Videos)
-  |            |_ _ _ v_ApplyEyeMakeup_g01_c01.avi
-  |            |
-  |            |_ _ _ v_ApplyEyeMakeup_g01_c02.avi
-  |                              .
-  |                              .
-  |                              .
-  |_ _ _ ApplyLipstick
-  |            |
-  |            |               
-  |            |_ _ _ v_ApplyLipstick_g01_c01.avi
-  |            |
-  |            |_ _ _ v_ApplyLipstick_g01_c02.avi
-                                 .
-                                 .
-                                 .
-                
-                
-                .
-                .
-                .
- 
 <img width="392" alt="Screenshot 2021-10-07 at 4 22 41 PM" src="https://user-images.githubusercontent.com/30610249/136347333-96c318d9-7726-40ad-a26f-c74c1e23fb54.png">
 
 #### For "server.py"
 There is a main folder, sub folders which contains all videos.
 
 Video File structure for the UCF101:
-
-(Main Folder)
-UCF101
-  |   
-  |   (sub-folder)
-  |_ _videos
-        |
-        |         (Videos)
-        |_ _ v_PlayingTabla_g18_c04.avi
-        |
-        |_ _ v_YoYo_g17_c06.avi
-                   .
-                   .
-                   .
                    
 <img width="308" alt="Screenshot 2021-10-07 at 4 23 27 PM" src="https://user-images.githubusercontent.com/30610249/136347459-66bd3e6e-6717-457d-bee9-ded4e9fea0eb.png">
 
