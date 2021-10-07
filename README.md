@@ -13,7 +13,7 @@ Video File structure for the UCF101:
 <img width="392" alt="Screenshot 2021-10-07 at 4 22 41 PM" src="https://user-images.githubusercontent.com/30610249/136347333-96c318d9-7726-40ad-a26f-c74c1e23fb54.png">
 
 #### For "server.py"
-There is a main folder, sub folders which contains all videos.
+There is a main folder and a sub folder which contains all videos.
 
 Video File structure for the UCF101:
                    
