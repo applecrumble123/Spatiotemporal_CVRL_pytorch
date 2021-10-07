@@ -1,4 +1,4 @@
-# Steps to run the python files
+## Steps to run the python files
 
 ### Ensure the splitting of the test and train videos is correct before runnning the python file
 
