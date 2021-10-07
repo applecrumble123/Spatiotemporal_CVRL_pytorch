@@ -38,6 +38,7 @@ UCF-101
                 .
                 .
  
+<img width="392" alt="Screenshot 2021-10-07 at 4 22 41 PM" src="https://user-images.githubusercontent.com/30610249/136347333-96c318d9-7726-40ad-a26f-c74c1e23fb54.png">
 
 #### For "server.py"
 There is a main folder, sub folders which contains all videos.
@@ -63,7 +64,8 @@ Modify the config file to change the folders path, saved model checkpoint and ba
 
 ## Data loaders information
 
-For the validation dataloader in line
+For the validation dataloader in line 689 in server.py and line 630 in local.py:
+- Use maximum of 2 GPU when using test_dataloader for validation and 4 GPUs when using val_dataloader
 
 local.py is done on the computer 
 
