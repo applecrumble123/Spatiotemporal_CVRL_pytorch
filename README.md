@@ -58,6 +58,10 @@ UCF101
                    .
                    .
                    .
+                   
+<img width="308" alt="Screenshot 2021-10-07 at 4 23 27 PM" src="https://user-images.githubusercontent.com/30610249/136347459-66bd3e6e-6717-457d-bee9-ded4e9fea0eb.png">
+
+
 ## Make sure to change the config file
 
 Modify the config file to change the folders path, saved model checkpoint and batch size when needed.
