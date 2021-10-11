@@ -22,5 +22,7 @@ RESIZED_FRAME = 224
 
 DATALOADER_NUM_WORKERS = 3
 
+SAVED_MODEL_FOLDER = os.path.join(ROOT_FOLDER, 'saved_model')
+
 # in run_model.py
-SAVED_MODEL_CHECKPOINT_PATH = os.path.join(ROOT_FOLDER, 'saved_model/epoch_10_model.pt')
+SAVED_MODEL_CHECKPOINT_PATH = os.path.join(SAVED_MODEL_FOLDER, 'epoch_10_model.pt')

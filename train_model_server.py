@@ -524,7 +524,7 @@ def ResNet_3D_50(img_channels = 3):
 #model = torch.hub.load('facebookresearch/pytorchvideo', 'slow_r50', pretrained=False)
 
 
-saved_model_folder = os.path.join(config.ROOT_FOLDER, 'saved_model')
+saved_model_folder = config.SAVED_MODEL_FOLDER
 if not os.path.exists(saved_model_folder):
     os.mkdir(saved_model_folder)
 

@@ -499,9 +499,9 @@ def nt_xent_loss(output1, output2, temperature):
     return loss
 
 # make a directory to save the model
-def create_saved_model_folder(model_checkpoints_folder):
-    if not os.path.exists(model_checkpoints_folder):
-        os.makedirs(model_checkpoints_folder)
+saved_model_folder = config.SAVED_MODEL_FOLDER
+if not os.path.exists(saved_model_folder):
+    os.mkdir(saved_model_folder)
 
 # create a function for the 3D ResNet 50 architecture
 def ResNet_3D_50(img_channels = 3):
