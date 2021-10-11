@@ -473,6 +473,7 @@ for idx_batch, sample in enumerate(train_dataloader):
 
 """ --------- Loss function ----------- """
 def JVS(out1, out2):
+    #print(out1.size()[1])
     out1 = torch.reshape(out1, (out1.size()[1],))
     out2 = torch.reshape(out2, (out2.size()[1],))
     #print(out1.size())
@@ -480,8 +481,6 @@ def JVS(out1, out2):
     #print((torch.dot(out1,out1) + torch.dot(out2,out2)))
     loss = 2*(torch.dot(out1,out2))/(torch.dot(out1,out1) + torch.dot(out2,out2))
     return loss
-
-
 
 # make a directory to save the model
 def create_saved_model_folder(model_checkpoints_folder):
@@ -497,7 +496,7 @@ def ResNet_3D_50(img_channels = 3):
 #model = torch.hub.load('facebookresearch/pytorchvideo', 'slow_r50', pretrained=False)
 
 
-saved_model_folder = os.path.join(config.ROOT_FOLDER, 'saved_model')
+saved_model_folder = config.SAVED_MODEL_FOLDER
 if not os.path.exists(saved_model_folder):
     os.mkdir(saved_model_folder)
 
