@@ -39,3 +39,6 @@ For the validation dataloader in line 689 in server.py and line 630 in local.py:
 
 *** Run the nohup command first. First run the server.py, then once completed, run the run_model.py
 
+## When running run_model.py
+When using a different model checkpoint, delete the train_features folder and test_features folder as the weights of the model will change, thus the extracted features will also change. Only when changing the classifier then there is no need to delete these folders. 
+
