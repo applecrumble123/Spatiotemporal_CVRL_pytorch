@@ -477,6 +477,7 @@ for idx_batch, sample in enumerate(train_dataloader):
 def nt_xent_loss(output1, output2, temperature):
     # concatenate v1 img and v2 img via the rows, stacking vertically
     out = torch.cat([output1, output2], dim=0)
+    # len of output is 2
     n_samples = len(out)
 
     # Full similarity matrix
@@ -487,6 +488,7 @@ def nt_xent_loss(output1, output2, temperature):
     # contiguous --> makes a copy of tensor so the order of elements would be same as if tensor of same shape created from scratch
     # --> https://discuss.pytorch.org/t/contigious-vs-non-contigious-tensor/30107
     # the diagonal of the matrix is the square of each vector element in the out vector, which shows the similarity between the same elements
+    # needs to return a 2x2 matrix to fit the mask
     cov = torch.mm(out, out.t().contiguous())
     sim = torch.exp(cov/temperature)
 
