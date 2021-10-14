@@ -569,7 +569,7 @@ class CVLR(object):
             zjs = torch.reshape(zjs, (1, 128))
 
 
-            loss = nt_xent_loss(zis, zjs, temperature=0.5)
+            loss = nt_xent_loss(zis, zjs, temperature=config.CONTRASTIVE_LOSS_TEMP)
 
 
             return loss
@@ -582,7 +582,7 @@ class CVLR(object):
             zjs = F.normalize(zjs, dim=1)
             #print('normalise zjs: ', zjs)
 
-            loss = nt_xent_loss(zis, zjs, temperature=0.5)
+            loss = nt_xent_loss(zis, zjs, temperature=config.CONTRASTIVE_LOSS_TEMP)
 
             return loss
 

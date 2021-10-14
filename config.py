@@ -22,6 +22,8 @@ RESIZED_FRAME = 224
 
 DATALOADER_NUM_WORKERS = 3
 
+CONTRASTIVE_LOSS_TEMP = 0.5
+
 SAVED_MODEL_FOLDER = os.path.join(ROOT_FOLDER, 'saved_model')
 
 # in run_model.py
