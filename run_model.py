@@ -350,6 +350,9 @@ else:
 
 test_features_path = os.path.join(config.ROOT_FOLDER, 'test_features')
 
+if not os.path.exists(test_features_path):
+    os.mkdir(test_features_path)
+
 x_test_pkl_path = os.path.join(test_features_path, 'x_test.pkl')
 y_test_pkl_path = os.path.join(test_features_path, 'y_test.pkl')
 
