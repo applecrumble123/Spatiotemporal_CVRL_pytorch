@@ -15,7 +15,7 @@ import torchvision.transforms.functional
 from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 
-import config
+import config_2
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -52,7 +52,7 @@ class_name_labelling = []
 # class_num label
 class_num_labelling = []
 
-with open(config.CLASS_LIST_TEXT_FILE) as f:
+with open(config_2.CLASS_LIST_TEXT_FILE) as f:
     # read the lines
     lines = f.readlines()
     for line in lines:
@@ -80,12 +80,12 @@ test_num_label = []
 
 def split_test_train(name, class_array, videos_array, num_label_array):
     # run through the 'ucfTrainTestlist' folder to get the text file
-    for text_file in os.listdir(config.DATA_LIST_FOLDER):
+    for text_file in os.listdir(config_2.DATA_LIST_FOLDER):
         # if the 'train' word is in the file name
         if name in text_file:
             #print(text_file)
             # get the text_file path
-            file_path = os.path.join(config.DATA_LIST_FOLDER, text_file)
+            file_path = os.path.join(config_2.DATA_LIST_FOLDER, text_file)
             # open the text file
             with open(file_path) as f:
                 # read the lines
@@ -102,7 +102,7 @@ def split_test_train(name, class_array, videos_array, num_label_array):
                         # append to the class array
                         class_array.append(split_line[0])
                         # append to the video array
-                        videos_array.append(os.path.join(config.ROOT_FOLDER,'UCF101/videos',split_line[1]))
+                        videos_array.append(os.path.join(config_2.ROOT_FOLDER,'UCF-101',split_line[0],split_line[1]))
                         # append to the num_label array
                         num_label_array.append((split_line[2]))
                     # no number label in the test folder so need to append to it
@@ -118,10 +118,9 @@ def split_test_train(name, class_array, videos_array, num_label_array):
                                 # append to the class array
                                 class_array.append(split_line[0])
                                 # append to the video array
-                                videos_array.append(os.path.join(config.ROOT_FOLDER, 'UCF101/videos', split_line[1]))
+                                videos_array.append(os.path.join(config_2.ROOT_FOLDER, 'UCF-101', split_line[0], split_line[1]))
                                 # append to the num_label array
                                 num_label_array.append((split_line[2]))
-
 
 
 split_test_train(name='train', class_array=train_class, videos_array=train_videos, num_label_array=train_num_label)
@@ -340,7 +339,7 @@ class CVLRTrainTransform(object):
     def __init__(self):
 
         data_transforms = [
-            transforms.RandomResizedCrop(size=config.RESIZED_FRAME, scale=(0.3, 1), ratio=(0.5, 2)),
+            transforms.RandomResizedCrop(size=config_2.RESIZED_FRAME, scale=(0.3, 1), ratio=(0.5, 2)),
             transforms.RandomHorizontalFlip(p=0.5),
             transforms.RandomVerticalFlip(p=0.5),
             transforms.RandomApply(torch.nn.ModuleList([transforms.ColorJitter(brightness=0.8 * 0.3,
@@ -380,7 +379,7 @@ class CVLRTestTransform(object):
     def __init__(self):
 
         data_transforms = [
-            transforms.RandomResizedCrop(size=config.RESIZED_FRAME, scale=(0.3, 1), ratio=(0.5, 2)),
+            transforms.RandomResizedCrop(size=config_2.RESIZED_FRAME, scale=(0.3, 1), ratio=(0.5, 2)),
             #transforms.ToTensor()
 
         ]
@@ -423,20 +422,20 @@ clip_1, clip_2, target = first_data
 train_transformed_dataset = VideoDataset(class_labels=train_num_label, vid=train_videos, transform=CVLRTrainTransform())
 
 train_dataloader = DataLoader(train_transformed_dataset,
-                              batch_size=config.BATCH_SIZE,
+                              batch_size=config_2.BATCH_SIZE,
                               shuffle=True,
                               # uncomment when using server
-                              num_workers=config.DATALOADER_NUM_WORKERS
+                              num_workers=config_2.DATALOADER_NUM_WORKERS
                               )
 
 """ ----- Test Dataloader ----- """
 test_transformed_dataset = VideoDataset(class_labels=test_num_label, vid=test_videos, transform=CVLRTestTransform())
 
 test_dataloader = DataLoader(test_transformed_dataset,
-                              batch_size=config.BATCH_SIZE,
+                              batch_size=config_2.BATCH_SIZE,
                               shuffle=True,
                               # uncomment when using server
-                              num_workers=config.DATALOADER_NUM_WORKERS
+                              num_workers=config_2.DATALOADER_NUM_WORKERS
                               )
 
 
@@ -444,10 +443,10 @@ test_dataloader = DataLoader(test_transformed_dataset,
 val_transformed_dataset = VideoDataset(class_labels=val_num_label, vid=val_videos, transform=CVLRTestTransform())
 
 val_dataloader = DataLoader(val_transformed_dataset,
-                              batch_size=config.BATCH_SIZE,
+                              batch_size=config_2.BATCH_SIZE,
                               shuffle=True,
                               # uncomment when using server
-                              num_workers=config.DATALOADER_NUM_WORKERS
+                              num_workers=config_2.DATALOADER_NUM_WORKERS
                               )
 
 
@@ -485,7 +484,7 @@ def ResNet_3D_50(img_channels = 3):
 #model = torch.hub.load('facebookresearch/pytorchvideo', 'slow_r50', pretrained=False)
 
 
-saved_model_folder = config.SAVED_MODEL_FOLDER
+saved_model_folder = config_2.SAVED_MODEL_FOLDER
 if not os.path.exists(saved_model_folder):
     os.mkdir(saved_model_folder)
 
@@ -499,7 +498,7 @@ class CVLR(object):
         # predefined above
         self.JVS_loss = JVS_loss
         self.encoder = ResNet_3D_50()
-        self.writer = SummaryWriter(log_dir=os.path.join(config.ROOT_FOLDER,'tensorboard_logs'))
+        self.writer = SummaryWriter(log_dir=os.path.join(config_2.ROOT_FOLDER,'tensorboard_logs'))
 
     # use GPU if available
     def _get_device(self):
@@ -724,7 +723,7 @@ class CVLR(object):
     def _load_pre_trained_weights(self, model):
         try:
             # load the checkpoint after the model runs
-            state_dict = torch.load(config.SAVED_MODEL_CHECKPOINT_PATH)
+            state_dict = torch.load(config_2.SAVED_MODEL_CHECKPOINT_PATH)
             model.load_state_dict(state_dict)
             print("Loaded pre-trained model with success.")
         except FileNotFoundError:

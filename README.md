@@ -33,7 +33,7 @@ For the validation dataloader in line 689 in server.py and line 630 in local.py:
 
 - watch -d -n -0.5 nvidia-smi --> watch the running of gpu when using a server
 - export CUDA_VISIBLE_DEVICES=0,1 (change the indexes of GPUs accordingly) --> making only 2 GPUs visible when using test_dataloader as validation dataloader
-- nohup python3 train_model_server.py > output.txt --> run the training of model python file in the background and write the output to the output.txt
+- nohup python3 train_model_server_contrastive_learning.py > output.txt --> run the training of model python file in the background and write the output to the output.txt
 - nohup python3 run_model.py > acc.txt --> run the frozen model python file in the background to get the accuracy and write the output to the acc.txt
 - watch -n 1 tail -n 10 acc.txt (change the name of the text file accordingly) --> watch the output file live while the background process is running
 
