@@ -8,11 +8,11 @@ DATA_LIST_FOLDER = os.path.join(ROOT_FOLDER, 'ucfTrainTestlist')
 
 CLASS_LIST_TEXT_FILE = os.path.join(DATA_LIST_FOLDER, 'classInd.txt')
 
-TRAIN_FOLDER_PATH = os.path.join(DATA_FOLDER, 'train')
+#TRAIN_FOLDER_PATH = os.path.join(DATA_FOLDER, 'train')
 
-TEST_FOLDER_PATH = os.path.join(DATA_FOLDER, 'test')
+#TEST_FOLDER_PATH = os.path.join(DATA_FOLDER, 'test')
 
-VAL_FOLDER_PATH = os.path.join(DATA_FOLDER, 'val')
+#VAL_FOLDER_PATH = os.path.join(DATA_FOLDER, 'val')
 
 BATCH_SIZE = 32
 
