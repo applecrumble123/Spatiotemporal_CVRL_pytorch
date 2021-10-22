@@ -24,25 +24,6 @@ print("There are {} GPUs available".format(torch.cuda.device_count()))
 
 
 
-""" ------------------- Create root data folder, train, test and val sub folders ------------------ """
-"""
-def create_folder(folder_path):
-    if not os.path.exists(folder_path):
-        os.mkdir(folder_path)
-
-# create data folder
-create_folder(config.DATA_FOLDER)
-
-# create train folder
-create_folder(config.TRAIN_FOLDER_PATH)
-
-# create test folder
-create_folder(config.TEST_FOLDER_PATH)
-
-# create val folder
-create_folder(config.VAL_FOLDER_PATH)
-"""
-
 """ ------------------- Get train, test and val dataset ------------------ """
 # class number label, class name
 class_labelling = []
@@ -687,7 +668,7 @@ class CVLR(object):
         # predefined above
         self.JVS = JVS_contrastive_loss
         self.encoder = ResNet_3D_50()
-        self.writer = SummaryWriter(log_dir=os.path.join(config.ROOT_FOLDER,'tensorboard_logs'))
+        self.writer = SummaryWriter(log_dir=config.TENSORBOARD_JVS_AND_CONTRASTIVE_LEARNING)
 
     # use GPU if available
     def _get_device(self):

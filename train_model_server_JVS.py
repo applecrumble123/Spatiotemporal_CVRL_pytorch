@@ -23,25 +23,6 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("There are {} GPUs available".format(torch.cuda.device_count()))
 
 
-""" ------------------- Create root data folder, train, test and val sub folders ------------------ """
-"""
-def create_folder(folder_path):
-    if not os.path.exists(folder_path):
-        os.mkdir(folder_path)
-
-# create data folder
-create_folder(config_2.DATA_FOLDER)
-
-# create train folder
-create_folder(config_2.TRAIN_FOLDER_PATH)
-
-# create test folder
-create_folder(config_2.TEST_FOLDER_PATH)
-
-# create val folder
-create_folder(config_2.VAL_FOLDER_PATH)
-"""
-
 """ ------------------- Get train, test and val dataset ------------------ """
 # class number label, class name
 class_labelling = []
@@ -214,24 +195,49 @@ class VideoDataset(Dataset):
         #print(vid_path)
 
         total_vid_frames = video.size()[0]
+        if total_vid_frames < 32:
+            print(video.size())
+            print(vid_path)
+
         #print(total_vid_frames)
 
         # random selection of the starting point of clip 1
         random_point_clip_1 = random.randint(0, total_vid_frames)
+        #print('random point: ', random_point_clip_1)
 
-        length_of_clip_1_in_frames = 32
-        length_of_clip_2_in_frames = 16
+        length_of_clip_1_in_frames = 28
+        length_of_clip_2_in_frames = 14
 
         start_frame_clip_1_idx = 0
         end_frame_clip_1_idx = 0
 
-        if random_point_clip_1 - length_of_clip_1_in_frames <= -1:
+        #if random_point_clip_1 - length_of_clip_1_in_frames <= 0:
+        if random_point_clip_1 <= 28:    
             start_frame_clip_1_idx = start_frame_clip_1_idx + 0
-            # minus 1 because 0 is inclusive so 0 - 31 has 32 frames
-            end_frame_clip_1_idx = end_frame_clip_1_idx + length_of_clip_1_in_frames - 1
-        else:
-            start_frame_clip_1_idx = random_point_clip_1 - length_of_clip_1_in_frames
-            end_frame_clip_1_idx = random_point_clip_1
+            end_frame_clip_1_idx = end_frame_clip_1_idx + 28
+
+            if total_vid_frames < 32:
+                print('random point: ', random_point_clip_1)
+                print('start: ', start_frame_clip_1_idx)
+                print('end: ', end_frame_clip_1_idx)
+                print('if')
+        #elif random_point_clip_1 - length_of_clip_1_in_frames >= 1:
+        if random_point_clip_1 > 28:
+            start_frame_clip_1_idx = start_frame_clip_1_idx + random_point_clip_1 - 28
+            end_frame_clip_1_idx = end_frame_clip_1_idx + start_frame_clip_1_idx + 28
+
+            if total_vid_frames < 32:
+                print('random point: ', random_point_clip_1)
+                print('start: ', start_frame_clip_1_idx)
+                print('end: ', end_frame_clip_1_idx)
+                print('if')
+            
+
+
+        #print('random point: ', random_point_clip_1)
+        #print('start: ', start_frame_clip_1_idx)
+        #print('end: ', end_frame_clip_1_idx)
+
 
 
 
@@ -245,7 +251,10 @@ class VideoDataset(Dataset):
                                        tensor_clip_1.size()[3],
                                        tensor_clip_1.size()[1],
                                        tensor_clip_1.size()[2]])
-        #print(len(tensor_clip_1))
+        
+        if total_vid_frames < 32:
+            print(len(tensor_clip_1))
+            print()
         #print('clip_1 size: ',clip_1.size())
 
         random_point_clip_2 = random.randint(start_frame_clip_1_idx, end_frame_clip_1_idx)
@@ -499,7 +508,7 @@ class CVLR(object):
         # predefined above
         self.JVS_loss = JVS_loss
         self.encoder = ResNet_3D_50()
-        self.writer = SummaryWriter(log_dir=os.path.join(config.ROOT_FOLDER,'tensorboard_logs'))
+        self.writer = SummaryWriter(log_dir=config.TENSORBOARD_JVS)
 
     # use GPU if available
     def _get_device(self):
@@ -554,7 +563,7 @@ class CVLR(object):
 
         #model = ResNet_3D_50().to(self.device)
         model = ResNet_3D_50()
-        model = self._load_pre_trained_weights(model)
+        #model = self._load_pre_trained_weights(model)
 
         model = nn.DataParallel(model, device_ids=list(range(torch.cuda.device_count())))
 
